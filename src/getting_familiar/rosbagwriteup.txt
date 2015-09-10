@@ -1,0 +1,5 @@
+1. How might rosbag fit into a debugging process as you work on projects in this class?
+Rosbag will help us capture and replay all the information being published to topics during a robot run.  This ability to replay will help with being able to rerun under exact conditions in order to debug.  In addition, by ros bagging many topics, we can investigate a certain topic in one session, and then revisit the same robot state in a different topic the next.  This allows us to keep consistency, while managing many different topics.
+
+2. Are there any obvious shortcomings of rosbag as a debugging tool?
+Rosbag is a virtual version of the real neato running. Thus, it suffers from the same disadvantages of debugging robots (you can't step through lines, per say)
