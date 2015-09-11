@@ -7,4 +7,20 @@ Rosbag is a virtual version of the real neato running. Thus, it suffers from the
 3. Does the new behavior of changing the fixed frame make sense?
 Yup, the frame really just changes the position of the Robot Model.  The odom frame still rotates exactly as it did before.
 
+4. Regarding the listener.py script, sleeping in the callback
+    a) What happens when you run this code?
+    The printing of the listener delays by 10 seconds; however, the sensor event is called at 10 hertz still.
+    b) What assumption can you safely make about any code that you put in a sensor callback?
+    It seems like it's going to run.  So if it's a sleep command, which is globally blocking, sensors won't respond til that code is finished.
+    c) In what ways might the behavior you observe be suboptimal when programming a robot?
+    Right now, this callback is not great because it's blocking.  It seems that the asynch nature is not happening, since all the listening events are being queued up by the globally blocking sleep.
+
+5. Regarding the listener.py script, queue_size=1
+    a) What happens now?
+    Print still delays, but now the timestamp in which the event is registered also reflects the delay (now its being called at a rate of 0.1 hertz)
+    b) What scenarios is this behavior good?
+    If we need real-time listening and callback, this is good.  We are guaranteed that the information passed to the callback is "fresh" and not queued up.
+    c) What scenarios is this behavior bad?
+    This could be problematic if you wanted to sense a messages whenever they occurred, and did not want your callback code to delay the sensing of new messages when they occur.
+
 
