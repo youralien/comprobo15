@@ -3,3 +3,8 @@ Rosbag will help us capture and replay all the information being published to to
 
 2. Are there any obvious shortcomings of rosbag as a debugging tool?
 Rosbag is a virtual version of the real neato running. Thus, it suffers from the same disadvantages of debugging robots (you can't step through lines, per say)
+
+3. Does the new behavior of changing the fixed frame make sense?
+Yup, the frame really just changes the position of the Robot Model.  The odom frame still rotates exactly as it did before.
+
+
