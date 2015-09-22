@@ -5,7 +5,9 @@ import rospy
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import LaserScan
 from neato_node.msg import Bump
+from nav_msgs.msg import Odometry
 
+from obstacle_avoidance import ObstacleAvoidance, angle_diff
 
 class ComboPFOA(object):
     """ Combo PersonFollowing (PF) and Obstacle Avoidance (OA) """
@@ -21,17 +23,35 @@ class ComboPFOA(object):
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         rospy.Subscriber("/scan", LaserScan, self.process_scan)
         rospy.Subscriber("/bump", Bump, self.process_bump)
+        rospy.Subscriber("/odom", Odometry, self.process_odom)
         self.twist = Twist()
         
-        # parameters
+        # parameters pf
         self.target_dist = .6
         self.width = 20
-        self.turn_k = .1
+        self.turn_k_pf = .1
         self.dist_k = 1
         self.degrees = 30
         self.checksum_queue = []
-        self.epsilon = 25
+        self.epsilon_pf = 25
         self.queue_size = 5
+
+        # parameters oa
+        self.range = 90
+        self.range_rad = math.pi / 180 * self.range
+        self.num_quads = int(360/self.range)
+        self.opposite_turns = [(i*self.range+180+self.range/2) % 360 for i in range(self.num_quads)]
+        self.turn_k_oa = 1
+        self.noturn = True
+        self.turn_target = None
+        self.unit_dist = 0.1
+        self.object_distance = 0.9
+        self.epsilon_oa = 0.1
+        self.yaw = None
+        self.ex_x, self.ex_y = None, None
+        self.first_jank = True
+        self.adjust_angle_flag = False
+        self.turning = False
  
         # flags
         self.moving_object_detected = False
@@ -59,7 +79,7 @@ class ComboPFOA(object):
             # clear the queue for the next check movement
             self.checksum_queue = []
             
-            if std > self.epsilon:
+            if std > self.epsilon_pf:
                 # movement happened
                 self.moving_object_detected = True
             else:
@@ -81,6 +101,22 @@ class ComboPFOA(object):
         self.scan = msg
         self.check_movement()
         print "self.moving_object_detected: ", self.moving_object_detected
+
+    def process_odom(self, msg):
+        self.odom = msg
+        self.x, self.y, self.yaw = self.convert_pose_to_xy_and_theta(self.odom.pose.pose)
+        if self.first_jank:
+            self.ex_x, self.ex_y = self.x, self.y
+            self.final_target = self.yaw
+            self.first_jank = False
+
+        if self.noturn:
+            d = math.sqrt((self.ex_x-self.x)**2 + (self.ex_y-self.y)**2)
+
+            # once we've moved the appropriate distance
+            if d >= self.unit_dist:
+                # we are preparing to turn again
+                self.params_to_turn()
             
     def person_following(self):
         while not rospy.is_shutdown():
@@ -99,7 +135,7 @@ class ComboPFOA(object):
 
             # velocity actions
             self.twist.linear.x = self.dist_k * dist_error
-            self.twist.angular.z = self.turn_k * turn_error
+            self.twist.angular.z = self.turn_k_pf * turn_error
 
             if not self.moving_object_detected:
                 return ComboPFOA.OBSTACLE_AVOIDANCE_STATE
@@ -112,8 +148,11 @@ class ComboPFOA(object):
                 return ComboPFOA.OBSTACLE_AVOIDANCE_STATE
 
         if self.bumped:
-            self.stop_movement()       
- 
+            self.stop_movement()
+
+    def obstacle_avoidance(self):
+        while not rospy.is_shutdown():
+            
     def run(self):
         while not rospy.is_shutdown():
             if self.state == ComboPFOA.OBSTACLE_AVOIDANCE_STATE:

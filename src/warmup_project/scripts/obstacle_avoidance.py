@@ -75,8 +75,7 @@ class ObstacleAvoidance(object):
             # once we've moved the appropriate distance
             if d >= self.unit_dist:
                 # we are preparing to turn again
-                self.noturn = False
-                self.twist.linear.x = 0
+                self.params_to_turn()
 
     def scan_signal(self, msg):
         # print "(self.noturn, yaw, adjust)", (self.noturn, self.yaw, self.adjust_angle_flag)
@@ -94,16 +93,16 @@ class ObstacleAvoidance(object):
             for i, e in enumerate(quad_average):
                 if np.isnan(e):
                     quad_average[i] = 10
-            # print "quad_average", quad_average
 
+            # get the range and quadrant number (q, i) of the closet object
             q = np.min(quad_average[quad_average.nonzero()])
             i = list(quad_average).index(q)
-            # print "quad", (i, q)
              
             # if i'm still close to an object
             if not self.adjust_angle_flag:
                 if self.turn_target:
                     self.twist.angular.z = self.turn_k*(angle_diff(self.turn_target, self.yaw))
+
                     # if it has reached the desired angle
                     # print "angle_diff: ", np.abs(angle_diff(self.turn_target, self.yaw))
                     if np.abs(angle_diff(self.turn_target, self.yaw)) < self.epsilon:
@@ -114,9 +113,9 @@ class ObstacleAvoidance(object):
                         if self.yaw:
                             self.turn_target = [self.yaw-math.pi/2, self.yaw+math.pi/2][i]
                         
-                            # print "self.turn_target", self.turn_target
                     else:
                         self.params_to_go_forward()
+
             # once I'm in safe distance
             else:
                 self.adjust_original_angle()
@@ -130,13 +129,15 @@ class ObstacleAvoidance(object):
             self.params_to_go_forward()
             self.adjust_angle_flag = False
 
-
     def params_to_go_forward(self):
         self.twist.angular.z = 0
         self.noturn = True
         self.turn_target = None
         self.ex_x, self.ex_y = self.x, self.y
 
+    def params_to_turn(self):
+        self.noturn = False
+        self.twist.linear.x = 0
 
     def run(self):
         r = rospy.Rate(10)
