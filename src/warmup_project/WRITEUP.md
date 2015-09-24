@@ -10,7 +10,7 @@ by Zhecan Wang and Ryan Louie
 ##For each behavior, what strategy did you use to implement the behavior? 
 - Wall following
     - bump sensors were used exclusively
-    - the bump sensors help the Neato orient itself parallel to the wall; if the left sensor was bumped, it would reverse left, or vice versa. Then, it would attempt to go forward again.
+    - the bump sensors help the Neato orient itself parallel to the wall; if the left sensor was bumped, it would pivot right, while backing up, or vice versa. This would in effect help the robot orient itself the opposite direction to the bumper. Then, it would attempt to go forward again.
     - this process would continue until it achieved a parallel state with the wall; the Neato would then move forward until its bumps sensors are triggered again.
 - Person following
     - laser scan was used, with a set forward "cone" 1) range and 2) width or angle.
