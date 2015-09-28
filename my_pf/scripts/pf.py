@@ -220,7 +220,6 @@ class ParticleFilter:
         if xy_theta == None:
             xy_theta = convert_pose_to_xy_and_theta(self.odom_pose.pose)
         self.particle_cloud = []
-        self.particle_cloud.append(Particle(0,0,0))
         # TODO create particles
 
         self.normalize_particles()
